@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Учёт проекта — отделка квартир</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f2ec; --paper-line:#dcd6c6; --ink:#22271f; --ink-soft:#5b6156;
+    --line:#c9c2ac; --accent:#8a5a2b; --accent-soft:#f0e6d6; --panel:#ffffff; --panel-line:#e4dfd0;
+    --danger:#a3402f; --ok:#4c6b4f; --ok-soft:#e4ebe2; --warn:#a3752f; --warn-soft:#f2e9d9;
+    --radius:2px;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans:'IBM Plex Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --slab:'Zilla Slab', Georgia, 'Times New Roman', serif;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1b1c18; --paper-line:#2c2d26; --ink:#eceae2; --ink-soft:#a9a89c; --line:#3a3a30;
+      --panel:#232420; --panel-line:#33342c; --accent:#c98b4a; --accent-soft:#332a1c;
+      --ok-soft:#1f2a20; --warn-soft:#2e2619;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1b1c18; --paper-line:#2c2d26; --ink:#eceae2; --ink-soft:#a9a89c; --line:#3a3a30;
+    --panel:#232420; --panel-line:#33342c; --accent:#c98b4a; --accent-soft:#332a1c;
+    --ok-soft:#1f2a20; --warn-soft:#2e2619;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 38px, var(--paper-line) 38px 39px),
+      repeating-linear-gradient(90deg, transparent 0 38px, var(--paper-line) 38px 39px);
+    background-size:38px 38px; min-height:100%;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 20px 80px; }
+  header.top{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; border-bottom:2px solid var(--ink); padding-bottom:16px; margin-bottom:18px; flex-wrap:wrap; }
+  .brand{ font-family:var(--mono); font-size:12px; letter-spacing:.04em; color:var(--ink-soft); }
+  h1{ font-family:var(--slab); font-weight:700; font-size:clamp(22px,3.2vw,32px); margin:2px 0 0; letter-spacing:-0.01em; }
+  .sub{ color:var(--ink-soft); font-size:14px; max-width:64ch; margin-top:4px; }
+  .theme-toggle{ font-family:var(--mono); font-size:11px; background:none; border:1px solid var(--line); color:var(--ink-soft); padding:6px 10px; border-radius:var(--radius); cursor:pointer; }
+
+  .role-bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
+  .role-btn{ font-family:var(--sans); font-weight:600; font-size:13px; background:var(--panel); border:1px solid var(--line); color:var(--ink-soft); padding:8px 14px; border-radius:20px; cursor:pointer; }
+  .role-btn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .role-select{ max-width:280px; }
+
+  .panel{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius); padding:22px; margin-bottom:18px; }
+  .panel h2{ font-family:var(--slab); font-size:19px; margin:0 0 4px; font-weight:600; }
+  .panel .hint{ color:var(--ink-soft); font-size:13px; margin:0 0 14px; max-width:72ch; }
+
+  .grid{ display:grid; gap:14px; }
+  .grid.cols-2{ grid-template-columns:1fr 1fr; }
+  .grid.cols-3{ grid-template-columns:1fr 1fr 1fr; }
+  .grid.cols-4{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:760px){ .grid.cols-4{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:640px){ .grid.cols-2,.grid.cols-3{ grid-template-columns:1fr; } }
+
+  label.field{ display:flex; flex-direction:column; gap:5px; font-size:13px; color:var(--ink-soft); }
+  label.field span{ font-weight:600; color:var(--ink); }
+  input,select,textarea{ font-family:var(--sans); font-size:14px; color:var(--ink); background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:8px 10px; width:100%; }
+  input:focus,select:focus,textarea:focus,button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  input:disabled, select:disabled, textarea:disabled{ opacity:.75; background:var(--paper-line); }
+  input[type="checkbox"]{ width:16px; height:16px; }
+  .check-row{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); }
+
+  button.btn{ font-family:var(--sans); font-weight:600; font-size:13px; border-radius:var(--radius); border:1px solid var(--ink); background:var(--ink); color:var(--paper); padding:9px 15px; cursor:pointer; }
+  button.btn:hover{ opacity:.88; }
+  button.btn.ghost{ background:none; color:var(--ink); border-color:var(--line); }
+  button.btn.danger{ background:none; color:var(--danger); border-color:var(--danger); }
+  button.btn.small{ padding:5px 10px; font-size:12px; }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
+  .project-card{ border:1px solid var(--panel-line); border-radius:var(--radius); padding:16px 18px; margin-bottom:10px; background:var(--paper); cursor:pointer; }
+  .project-card:hover{ border-color:var(--accent); }
+  .project-card.selected{ border-color:var(--ink); background:var(--accent-soft); }
+  .project-card .pc-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .project-card h3{ font-family:var(--slab); font-size:17px; margin:0; }
+  .project-card .pc-meta{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; }
+  .progress-bar{ height:6px; background:var(--panel-line); border-radius:4px; overflow:hidden; margin-top:10px; }
+  .progress-bar > div{ height:100%; background:var(--accent); }
+
+  .stage-card{ border:1px solid var(--panel-line); border-radius:var(--radius); margin-bottom:12px; background:var(--paper); overflow:hidden; }
+  .stage-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 16px; cursor:pointer; }
+  .stage-head .stage-title{ display:flex; align-items:center; gap:10px; }
+  .stage-head input.stage-name{ font-weight:600; font-size:15px; max-width:240px; }
+  .status-badge{ font-family:var(--mono); font-size:11px; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .status-planned{ background:var(--panel-line); color:var(--ink-soft); }
+  .status-in_progress{ background:var(--warn-soft); color:var(--warn); }
+  .status-done{ background:var(--ok-soft); color:var(--ok); }
+  .stage-body{ padding:0 18px 18px; border-top:1px dashed var(--line); }
+  .stage-body.collapsed{ display:none; }
+  .section-label{ font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--ink-soft); margin:16px 0 8px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--panel-line); vertical-align:middle; }
+  th{ font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); font-weight:600; }
+  td.num, th.num{ text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  td input, td select{ padding:5px 7px; font-size:13px; }
+  .table-scroll{ overflow-x:auto; }
+  .mini-add{ margin-top:8px; }
+
+  .photo-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .photo-thumb{ position:relative; width:84px; height:84px; border-radius:var(--radius); overflow:hidden; border:1px solid var(--panel-line); }
+  .photo-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-thumb button{ position:absolute; top:2px; right:2px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:50%; width:18px; height:18px; font-size:11px; cursor:pointer; line-height:1; }
+  .photo-add{ width:84px; height:84px; border:1px dashed var(--line); border-radius:var(--radius); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--ink-soft); cursor:pointer; text-align:center; }
+
+  .fin-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:10px; }
+  @media (max-width:760px){ .fin-grid{ grid-template-columns:1fr 1fr; } }
+  .fin-box{ border:1px solid var(--panel-line); border-radius:var(--radius); padding:12px 14px; background:var(--panel); }
+  .fin-box .lbl{ font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); }
+  .fin-box .val{ font-family:var(--mono); font-size:18px; font-weight:600; margin-top:4px; }
+  .fin-box.warn .val{ color:var(--warn); }
+  .fin-box.danger .val{ color:var(--danger); }
+  .fin-box.ok .val{ color:var(--ok); }
+
+  .sign-row{ display:flex; gap:20px; flex-wrap:wrap; margin-top:8px; }
+  .sign-box{ border:1px solid var(--panel-line); border-radius:var(--radius); padding:10px 14px; flex:1; min-width:220px; }
+  .sign-box .st{ font-size:12px; color:var(--ink-soft); margin-top:4px; }
+  .rp-only{ background:var(--accent-soft); border-radius:var(--radius); padding:12px 14px; margin-top:16px; }
+  .rp-only .tag{ font-family:var(--mono); font-size:10px; color:var(--accent); margin-bottom:8px; display:block; }
+
+  .empty{ color:var(--ink-soft); font-size:13px; padding:18px 0; text-align:center; border:1px dashed var(--line); border-radius:var(--radius); }
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:var(--radius); font-size:13px; opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; z-index:50; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media print{
+    body{ background:#fff; }
+    nav, .no-print, .theme-toggle, .role-bar, .btn-row, .rp-only{ display:none !important; }
+    .panel, .stage-card{ border:none; padding:0; margin-bottom:16px; break-inside:avoid; }
+    .wrap{ max-width:none; padding:0; }
+    header.top{ border-bottom:2px solid #000; }
+    .stage-body.collapsed{ display:block !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand">PRAGMA · МОДУЛЬ 2 ИЗ ТЗ</div>
+      <h1>Система учёта проекта</h1>
+      <div class="sub">Объект → этапы → договор/смета, эл.подпись, доп.соглашения, акты и фото, материалы, наряды.</div>
+    </div>
+    <button class="theme-toggle no-print" id="themeToggle">тёмная тема</button>
+  </header>
+
+  <div class="role-bar no-print">
+    <button class="role-btn active" data-role="rp">Руководитель проекта</button>
+    <button class="role-btn" data-role="customer">Кабинет заказчика</button>
+    <button class="role-btn" data-role="master">Кабинет мастера</button>
+    <select class="role-select no-print" id="roleSelect" style="display:none;"></select>
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORE_KEY = "pragma_project_tracker_v1";
+  var STAGE_STATUSES = [["planned","План"],["in_progress","В работе"],["done","Завершён"]];
+
+  var state = { role:"rp", selectedProjectId:null, selectedCustomerProjectId:null, selectedMaster:"", projects:[] };
+
+  var uid = function(p){ return p + Math.random().toString(36).slice(2,9); };
+  function fmt(n){ return Math.round(n||0).toLocaleString("ru-RU"); }
+  function toast(msg){
+    var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toast._h); toast._h=setTimeout(function(){t.classList.remove("show");},2200);
+  }
+
+  /* ---------- storage ---------- */
+  function load(){
+    try{ var raw = localStorage.getItem(STORE_KEY); state.projects = raw ? JSON.parse(raw) : []; }
+    catch(e){ state.projects = []; }
+  }
+  function save(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state.projects)); return true; }
+    catch(e){ toast("Не удалось сохранить — возможно, переполнено хранилище браузера (фото занимают место)"); return false; }
+  }
+
+  function blankProject(){
+    return { id: uid("proj_"), name:"Новый объект", address:"", clientName:"", clientPhone:"", stages:[] };
+  }
+  function blankStage(){
+    return {
+      id: uid("st_"), name:"Новый этап", status:"planned", plannedDate:"", actualDate:"", assignedMaster:"",
+      contractNumber:"", contractAmount:0,
+      customerSigned:false, customerSignedAt:"", rpSigned:false, rpSignedAt:"",
+      extraAgreements:[], // {id,name,amount,note}
+      actSigned:false, actSignedAt:"",
+      photosBefore:[], photosAfter:[], // dataURLs
+      materialsAdvance:0, materialsForecast:0,
+      purchases:[], // {id,date,item,amount}
+      payouts:[], // {id,master,agreed,paid,note}
+      open:false
+    };
+  }
+
+  function projectById(id){ return state.projects.filter(function(p){return p.id===id;})[0] || null; }
+  function stageSum(stage){
+    var extra = (stage.extraAgreements||[]).reduce(function(a,e){return a+(e.amount||0);},0);
+    return (stage.contractAmount||0) + extra;
+  }
+  function stageSpent(stage){ return (stage.purchases||[]).reduce(function(a,p){return a+(p.amount||0);},0); }
+  function projectContractTotal(project){ return project.stages.reduce(function(a,s){return a+stageSum(s);},0); }
+  function projectAdvanceTotal(project){ return project.stages.reduce(function(a,s){return a+(s.materialsAdvance||0);},0); }
+  function projectSpentTotal(project){ return project.stages.reduce(function(a,s){return a+stageSpent(s);},0); }
+  function projectProgress(project){
+    if(!project.stages.length) return 0;
+    var done = project.stages.filter(function(s){return s.status==="done";}).length;
+    return Math.round(done/project.stages.length*100);
+  }
+  function allMasterNames(){
+    var set = {};
+    state.projects.forEach(function(p){ p.stages.forEach(function(s){
+      if(s.assignedMaster) set[s.assignedMaster]=true;
+      (s.payouts||[]).forEach(function(po){ if(po.master) set[po.master]=true; });
+    });});
+    return Object.keys(set).sort();
+  }
+
+  /* ---------- small field helpers ---------- */
+  function fieldText(labelText, value, onChange, disabled){
+    var lab=document.createElement("label"); lab.className="field";
+    var sp=document.createElement("span"); sp.textContent=labelText;
+    var inp=document.createElement("input"); inp.type="text"; inp.value=value||""; inp.disabled=!!disabled;
+    inp.addEventListener("input", function(){ onChange(inp.value); });
+    lab.appendChild(sp); lab.appendChild(inp); return lab;
+  }
+  function fieldNum(labelText, value, onChange, disabled){
+    var lab=document.createElement("label"); lab.className="field";
+    var sp=document.createElement("span"); sp.textContent=labelText;
+    var inp=document.createElement("input"); inp.type="number"; inp.min="0"; inp.step="1"; inp.value=value||0; inp.disabled=!!disabled;
+    inp.addEventListener("input", function(){ onChange(parseFloat(inp.value)||0); });
+    lab.appendChild(sp); lab.appendChild(inp); return lab;
+  }
+  function fieldDate(labelText, value, onChange, disabled){
+    var lab=document.createElement("label"); lab.className="field";
+    var sp=document.createElement("span"); sp.textContent=labelText;
+    var inp=document.createElement("input"); inp.type="date"; inp.value=value||""; inp.disabled=!!disabled;
+    inp.addEventListener("input", function(){ onChange(inp.value); });
+    lab.appendChild(sp); lab.appendChild(inp); return lab;
+  }
+  function fieldSelect(labelText, value, options, onChange, disabled){
+    var lab=document.createElement("label"); lab.className="field";
+    var sp=document.createElement("span"); sp.textContent=labelText;
+    var sel=document.createElement("select"); sel.disabled=!!disabled;
+    options.forEach(function(o){ var op=document.createElement("option"); op.value=o[0]; op.textContent=o[1]; if(o[0]===value) op.selected=true; sel.appendChild(op); });
+    sel.addEventListener("change", function(){ onChange(sel.value); });
+    lab.appendChild(sp); lab.appendChild(sel); return lab;
+  }
+
+  function compressImage(file, cb){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var maxDim = 900;
+        var w = img.width, h = img.height;
+        if(w>h && w>maxDim){ h = Math.round(h*maxDim/w); w = maxDim; }
+        else if(h>maxDim){ w = Math.round(w*maxDim/h); h = maxDim; }
+        var canvas = document.createElement("canvas"); canvas.width=w; canvas.height=h;
+        canvas.getContext("2d").drawImage(img,0,0,w,h);
+        cb(canvas.toDataURL("image/jpeg", 0.72));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* ---------- stage card (shared, role-aware) ---------- */
+  function renderStageCard(project, stage, role){
+    var editable = role==="rp";
+    var isMasterView = role==="master";
+
+    var card = document.createElement("div"); card.className="stage-card";
+
+    var head = document.createElement("div"); head.className="stage-head";
+    var titleWrap = document.createElement("div"); titleWrap.className="stage-title";
+    var nameInput = document.createElement("input"); nameInput.className="stage-name"; nameInput.value=stage.name; nameInput.disabled=!editable;
+    nameInput.addEventListener("input", function(){ stage.name=nameInput.value; save(); });
+    nameInput.addEventListener("click", function(ev){ ev.stopPropagation(); });
+    var badge = document.createElement("span"); badge.className="status-badge status-"+stage.status;
+    badge.textContent = STAGE_STATUSES.filter(function(s){return s[0]===stage.status;})[0][1];
+    titleWrap.appendChild(nameInput); titleWrap.appendChild(badge);
+    if(stage.assignedMaster){
+      var mTag = document.createElement("span"); mTag.className="status-badge"; mTag.style.background="var(--panel-line)"; mTag.style.color="var(--ink-soft)";
+      mTag.textContent = "мастер: " + stage.assignedMaster;
+      titleWrap.appendChild(mTag);
+    }
+    var arrow = document.createElement("span"); arrow.className="status-badge"; arrow.style.background="none"; arrow.style.border="1px solid var(--line)";
+    arrow.textContent = stage.open ? "▴" : "▾";
+    head.appendChild(titleWrap); head.appendChild(arrow);
+    head.addEventListener("click", function(){ stage.open=!stage.open; body.classList.toggle("collapsed", !stage.open); arrow.textContent = stage.open?"▴":"▾"; });
+
+    var body = document.createElement("div"); body.className="stage-body" + (stage.open?"":" collapsed");
+
+    // --- основное ---
+    var basicLabel = document.createElement("div"); basicLabel.className="section-label"; basicLabel.textContent="ОСНОВНОЕ";
+    var basicGrid = document.createElement("div"); basicGrid.className="grid cols-4";
+    basicGrid.appendChild(fieldSelect("Статус", stage.status, STAGE_STATUSES, function(v){ stage.status=v; save(); renderCurrent(); }, !editable));
+    basicGrid.appendChild(fieldDate("План. дата", stage.plannedDate, function(v){stage.plannedDate=v; save();}, !editable));
+    basicGrid.appendChild(fieldDate("Факт. дата", stage.actualDate, function(v){stage.actualDate=v; save();}, !editable));
+    basicGrid.appendChild(fieldText("Назначенный мастер", stage.assignedMaster, function(v){stage.assignedMaster=v; save();}, !editable));
+
+    // --- договор и смета (hidden details from master) ---
+    var contractSection;
+    if(!isMasterView){
+      var contractLabel = document.createElement("div"); contractLabel.className="section-label"; contractLabel.textContent="ДОГОВОР И СМЕТА ЭТАПА";
+      var contractGrid = document.createElement("div"); contractGrid.className="grid cols-3";
+      contractGrid.appendChild(fieldText("№ договора/сметы", stage.contractNumber, function(v){stage.contractNumber=v; save();}, !editable));
+      contractGrid.appendChild(fieldNum("Сумма по смете этапа, ₽", stage.contractAmount, function(v){stage.contractAmount=v; save(); renderCurrent();}, !editable));
+
+      var signWrap = document.createElement("div");
+      var signRow = document.createElement("div"); signRow.className="sign-row";
+      [["rpSigned","rpSignedAt","Подпись РП"],["customerSigned","customerSignedAt","Подпись заказчика"]].forEach(function(pair){
+        var box=document.createElement("div"); box.className="sign-box";
+        var row=document.createElement("label"); row.className="check-row";
+        var cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!stage[pair[0]];
+        var canSignThis = editable || (role==="customer" && pair[0]==="customerSigned");
+        cb.disabled = !canSignThis;
+        cb.addEventListener("change", function(){
+          stage[pair[0]] = cb.checked;
+          stage[pair[1]] = cb.checked ? new Date().toISOString().slice(0,10) : "";
+          save(); renderCurrent();
+        });
+        var sp=document.createElement("span"); sp.textContent=pair[2];
+        row.appendChild(cb); row.appendChild(sp);
+        var st=document.createElement("div"); st.className="st"; st.textContent = stage[pair[1]] ? ("подписано " + stage[pair[1]]) : "не подписано";
+        box.appendChild(row); box.appendChild(st);
+        signRow.appendChild(box);
+      });
+      signWrap.appendChild(signRow);
+
+      contractSection = document.createElement("div");
+      contractSection.appendChild(contractLabel); contractSection.appendChild(contractGrid); contractSection.appendChild(signWrap);
+    }
+
+    // --- доп. соглашения ---
+    var extraSection;
+    if(!isMasterView){
+      var extraLabel = document.createElement("div"); extraLabel.className="section-label"; extraLabel.textContent="ДОП. СОГЛАШЕНИЯ / ДОП. СМЕТЫ";
+      var extraTableWrap = document.createElement("div"); extraTableWrap.className="table-scroll";
+      var extraTable = document.createElement("table");
+      extraTable.innerHTML = "<thead><tr><th>Наименование</th><th>Примечание</th><th class='num'>Сумма, ₽</th><th></th></tr></thead>";
+      var extraBody = document.createElement("tbody");
+      (stage.extraAgreements||[]).forEach(function(ea){
+        var tr=document.createElement("tr");
+        var td1=document.createElement("td"); var in1=document.createElement("input"); in1.value=ea.name; in1.disabled=!editable;
+        in1.addEventListener("input", function(){ea.name=in1.value; save();}); td1.appendChild(in1);
+        var td2=document.createElement("td"); var in2=document.createElement("input"); in2.value=ea.note||""; in2.disabled=!editable;
+        in2.addEventListener("input", function(){ea.note=in2.value; save();}); td2.appendChild(in2);
+        var td3=document.createElement("td"); td3.className="num"; var in3=document.createElement("input"); in3.type="number"; in3.value=ea.amount||0; in3.disabled=!editable;
+        in3.addEventListener("input", function(){ea.amount=parseFloat(in3.value)||0; save(); renderCurrent();}); td3.appendChild(in3);
+        var td4=document.createElement("td");
+        if(editable){ var delB=document.createElement("button"); delB.className="btn danger small"; delB.textContent="✕";
+          delB.addEventListener("click", function(){ stage.extraAgreements = stage.extraAgreements.filter(function(x){return x.id!==ea.id;}); save(); renderCurrent(); });
+          td4.appendChild(delB); }
+        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
+        extraBody.appendChild(tr);
+      });
+      extraTable.appendChild(extraBody); extraTableWrap.appendChild(extraTable);
+      extraSection = document.createElement("div");
+      extraSection.appendChild(extraLabel); extraSection.appendChild(extraTableWrap);
+      if(editable){
+        var addExtra = document.createElement("button"); addExtra.className="btn ghost small mini-add"; addExtra.textContent="+ доп.соглашение";
+        addExtra.addEventListener("click", function(){
+          stage.extraAgreements = stage.extraAgreements || [];
+          stage.extraAgreements.push({id:uid("ea_"), name:"Доп. работы", note:"", amount:0});
+          save(); renderCurrent();
+        });
+        extraSection.appendChild(addExtra);
+      }
+    }
+
+    // --- акт и фотофиксация ---
+    var actLabel = document.createElement("div"); actLabel.className="section-label"; actLabel.textContent="АКТ ПРИЁМКИ И ФОТОФИКСАЦИЯ";
+    var actBox = document.createElement("div");
+    var actRow = document.createElement("label"); actRow.className="check-row";
+    var actCb = document.createElement("input"); actCb.type="checkbox"; actCb.checked=!!stage.actSigned;
+    var canSignAct = editable || role==="customer";
+    actCb.disabled = !canSignAct;
+    actCb.addEventListener("change", function(){
+      stage.actSigned = actCb.checked; stage.actSignedAt = actCb.checked ? new Date().toISOString().slice(0,10) : "";
+      save(); renderCurrent();
+    });
+    var actSp = document.createElement("span"); actSp.textContent = "Акт приёмки подписан" + (stage.actSignedAt ? (" ("+stage.actSignedAt+")") : "");
+    actRow.appendChild(actCb); actRow.appendChild(actSp);
+    actBox.appendChild(actRow);
+
+    function photoBlock(labelText, key){
+      var wrap = document.createElement("div"); wrap.style.marginTop="10px";
+      var lab = document.createElement("div"); lab.style.fontSize="12.5px"; lab.style.color="var(--ink-soft)"; lab.style.marginBottom="4px"; lab.textContent = labelText;
+      var row = document.createElement("div"); row.className="photo-row";
+      (stage[key]||[]).forEach(function(src, idx){
+        var th = document.createElement("div"); th.className="photo-thumb";
+        var img = document.createElement("img"); img.src = src; th.appendChild(img);
+        if(editable || role==="master"){
+          var delB = document.createElement("button"); delB.textContent="✕";
+          delB.addEventListener("click", function(){ stage[key].splice(idx,1); save(); renderCurrent(); });
+          th.appendChild(delB);
+        }
+        row.appendChild(th);
+      });
+      if((editable || role==="master") && (stage[key]||[]).length < 6){
+        var addDiv = document.createElement("label"); addDiv.className="photo-add"; addDiv.textContent="+ фото";
+        var fileIn = document.createElement("input"); fileIn.type="file"; fileIn.accept="image/*"; fileIn.style.display="none";
+        fileIn.addEventListener("change", function(){
+          if(!fileIn.files || !fileIn.files[0]) return;
+          compressImage(fileIn.files[0], function(dataUrl){
+            stage[key] = stage[key] || [];
+            stage[key].push(dataUrl);
+            save(); renderCurrent();
+          });
+        });
+        addDiv.appendChild(fileIn);
+        row.appendChild(addDiv);
+      }
+      wrap.appendChild(lab); wrap.appendChild(row);
+      return wrap;
+    }
+    actBox.appendChild(photoBlock("До", "photosBefore"));
+    actBox.appendChild(photoBlock("После", "photosAfter"));
+
+    // --- материалы ---
+    var matLabel = document.createElement("div"); matLabel.className="section-label"; matLabel.textContent="МАТЕРИАЛЫ (расходная часть)";
+    var matGrid = document.createElement("div"); matGrid.className="grid cols-3";
+    var matEditable = editable;
+    matGrid.appendChild(fieldNum("Аванс от заказчика, ₽", stage.materialsAdvance, function(v){stage.materialsAdvance=v; save(); renderCurrent();}, !matEditable));
+    matGrid.appendChild(fieldNum("Прогноз затрат на этап, ₽", stage.materialsForecast, function(v){stage.materialsForecast=v; save(); renderCurrent();}, !matEditable));
+
+    var purchasesWrap = document.createElement("div"); purchasesWrap.className="table-scroll"; purchasesWrap.style.marginTop="10px";
+    var pTable = document.createElement("table");
+    pTable.innerHTML = "<thead><tr><th>Дата</th><th>Что купили</th><th class='num'>Сумма, ₽</th><th></th></tr></thead>";
+    var pBody = document.createElement("tbody");
+    var canAddPurchase = editable || isMasterView;
+    (stage.purchases||[]).forEach(function(pu){
+      var tr=document.createElement("tr");
+      var td1=document.createElement("td"); var in1=document.createElement("input"); in1.type="date"; in1.value=pu.date||""; in1.disabled=!canAddPurchase;
+      in1.addEventListener("input", function(){pu.date=in1.value; save();}); td1.appendChild(in1);
+      var td2=document.createElement("td"); var in2=document.createElement("input"); in2.value=pu.item||""; in2.disabled=!canAddPurchase;
+      in2.addEventListener("input", function(){pu.item=in2.value; save();}); td2.appendChild(in2);
+      var td3=document.createElement("td"); td3.className="num"; var in3=document.createElement("input"); in3.type="number"; in3.value=pu.amount||0; in3.disabled=!canAddPurchase;
+      in3.addEventListener("input", function(){pu.amount=parseFloat(in3.value)||0; save(); renderCurrent();}); td3.appendChild(in3);
+      var td4=document.createElement("td");
+      if(canAddPurchase){ var delB=document.createElement("button"); delB.className="btn danger small"; delB.textContent="✕";
+        delB.addEventListener("click", function(){ stage.purchases = stage.purchases.filter(function(x){return x.id!==pu.id;}); save(); renderCurrent(); });
+        td4.appendChild(delB); }
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
+      pBody.appendChild(tr);
+    });
+    pTable.appendChild(pBody); purchasesWrap.appendChild(pTable);
+
+    var matBox = document.createElement("div");
+    matBox.appendChild(matGrid); matBox.appendChild(purchasesWrap);
+    if(canAddPurchase){
+      var addP = document.createElement("button"); addP.className="btn ghost small mini-add"; addP.textContent="+ покупка (чек)";
+      addP.addEventListener("click", function(){
+        stage.purchases = stage.purchases || [];
+        stage.purchases.push({id:uid("pu_"), date:new Date().toISOString().slice(0,10), item:"", amount:0});
+        save(); renderCurrent();
+      });
+      matBox.appendChild(addP);
+    }
+
+    var spent = stageSpent(stage);
+    var remaining = (stage.materialsAdvance||0) - spent;
+    var finGrid = document.createElement("div"); finGrid.className="fin-grid";
+    function finBox(label, val, cls){
+      var b=document.createElement("div"); b.className="fin-box"+(cls?(" "+cls):"");
+      var l=document.createElement("div"); l.className="lbl"; l.textContent=label;
+      var v=document.createElement("div"); v.className="val"; v.textContent=fmt(val)+" ₽";
+      b.appendChild(l); b.appendChild(v); return b;
+    }
+    finGrid.appendChild(finBox("Аванс на материалы", stage.materialsAdvance));
+    finGrid.appendChild(finBox("Потрачено", spent));
+    finGrid.appendChild(finBox("Остаток", remaining, remaining<0?"danger":"ok"));
+    finGrid.appendChild(finBox("Прогноз на этап", stage.materialsForecast, (stage.materialsForecast && spent>stage.materialsForecast)?"warn":""));
+    matBox.appendChild(finGrid);
+
+    // --- наряды (RP only) ---
+    var payoutsSection;
+    if(role==="rp"){
+      payoutsSection = document.createElement("div"); payoutsSection.className="rp-only";
+      var tag = document.createElement("span"); tag.className="tag"; tag.textContent="ВИДНО ТОЛЬКО РП — ЗАКАЗЧИКУ НЕ ПОКАЗЫВАЕТСЯ";
+      payoutsSection.appendChild(tag);
+      var poLabel = document.createElement("div"); poLabel.style.fontWeight="600"; poLabel.style.marginBottom="8px"; poLabel.textContent="Наряды (оплата мастерам)";
+      payoutsSection.appendChild(poLabel);
+      var poWrap = document.createElement("div"); poWrap.className="table-scroll";
+      var poTable = document.createElement("table");
+      poTable.innerHTML = "<thead><tr><th>Мастер</th><th>Примечание</th><th class='num'>Согласовано, ₽</th><th class='num'>Выплачено, ₽</th><th></th></tr></thead>";
+      var poBody = document.createElement("tbody");
+      (stage.payouts||[]).forEach(function(po){
+        var tr=document.createElement("tr");
+        var td1=document.createElement("td"); var in1=document.createElement("input"); in1.value=po.master||"";
+        in1.addEventListener("input", function(){po.master=in1.value; save();}); td1.appendChild(in1);
+        var td2=document.createElement("td"); var in2=document.createElement("input"); in2.value=po.note||"";
+        in2.addEventListener("input", function(){po.note=in2.value; save();}); td2.appendChild(in2);
+        var td3=document.createElement("td"); td3.className="num"; var in3=document.createElement("input"); in3.type="number"; in3.value=po.agreed||0;
+        in3.addEventListener("input", function(){po.agreed=parseFloat(in3.value)||0; save();}); td3.appendChild(in3);
+        var td4=document.createElement("td"); td4.className="num"; var in4=document.createElement("input"); in4.type="number"; in4.value=po.paid||0;
+        in4.addEventListener("input", function(){po.paid=parseFloat(in4.value)||0; save();}); td4.appendChild(in4);
+        var td5=document.createElement("td"); var delB=document.createElement("button"); delB.className="btn danger small"; delB.textContent="✕";
+        delB.addEventListener("click", function(){ stage.payouts = stage.payouts.filter(function(x){return x.id!==po.id;}); save(); renderCurrent(); });
+        td5.appendChild(delB);
+        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4); tr.appendChild(td5);
+        poBody.appendChild(tr);
+      });
+      poTable.appendChild(poBody); poWrap.appendChild(poTable);
+      payoutsSection.appendChild(poWrap);
+      var addPo = document.createElement("button"); addPo.className="btn ghost small mini-add"; addPo.textContent="+ наряд";
+      addPo.addEventListener("click", function(){
+        stage.payouts = stage.payouts || [];
+        stage.payouts.push({id:uid("po_"), master:stage.assignedMaster||"", note:"", agreed:0, paid:0});
+        save(); renderCurrent();
+      });
+      payoutsSection.appendChild(addPo);
+    } else if(isMasterView){
+      var mine = (stage.payouts||[]).filter(function(po){ return po.master === state.selectedMaster; });
+      var agreed = mine.reduce(function(a,p){return a+(p.agreed||0);},0);
+      var paid = mine.reduce(function(a,p){return a+(p.paid||0);},0);
+      payoutsSection = document.createElement("div"); payoutsSection.className="rp-only";
+      var tag2=document.createElement("span"); tag2.className="tag"; tag2.textContent="ОПЛАТА ПО ЭТОМУ ЭТАПУ";
+      payoutsSection.appendChild(tag2);
+      var fg = document.createElement("div"); fg.className="fin-grid"; fg.style.gridTemplateColumns="1fr 1fr 1fr";
+      fg.appendChild(finBox("Начислено", agreed));
+      fg.appendChild(finBox("Выплачено", paid, "ok"));
+      fg.appendChild(finBox("Осталось получить", agreed-paid, (agreed-paid>0)?"warn":""));
+      payoutsSection.appendChild(fg);
+    }
+
+    body.appendChild(basicLabel); body.appendChild(basicGrid);
+    if(contractSection) body.appendChild(contractSection);
+    if(extraSection) body.appendChild(extraSection);
+    body.appendChild(actLabel); body.appendChild(actBox);
+    body.appendChild(matLabel); body.appendChild(matBox);
+    if(payoutsSection) body.appendChild(payoutsSection);
+
+    if(editable){
+      var delStage = document.createElement("button"); delStage.className="btn danger small no-print"; delStage.style.marginTop="16px";
+      delStage.textContent="Удалить этап";
+      delStage.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        project.stages = project.stages.filter(function(s){return s.id!==stage.id;});
+        save(); renderCurrent();
+      });
+      body.appendChild(delStage);
+    }
+
+    card.appendChild(head); card.appendChild(body);
+    return card;
+  }
+
+  /* ---------- RP view ---------- */
+  function renderRP(root){
+    var panel = document.createElement("div"); panel.className="panel";
+    var topRow = document.createElement("div"); topRow.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;";
+    var h = document.createElement("div");
+    h.innerHTML = "<h2>Объекты</h2><p class='hint'>Карточка по каждому объекту: этапы, договоры, акты, материалы, наряды.</p>";
+    var addBtn = document.createElement("button"); addBtn.className="btn no-print"; addBtn.textContent="+ Добавить объект";
+    addBtn.addEventListener("click", function(){
+      var p = blankProject(); state.projects.push(p); state.selectedProjectId = p.id; save(); renderCurrent();
+    });
+    topRow.appendChild(h); topRow.appendChild(addBtn);
+    panel.appendChild(topRow);
+
+    if(!state.projects.length){
+      var empty = document.createElement("div"); empty.className="empty"; empty.textContent="Объектов пока нет — добавьте первый.";
+      panel.appendChild(empty);
+    } else {
+      state.projects.forEach(function(p){
+        var card = document.createElement("div"); card.className="project-card" + (p.id===state.selectedProjectId ? " selected":"");
+        var top = document.createElement("div"); top.className="pc-top";
+        var h3 = document.createElement("h3"); h3.textContent = p.name || "Без названия";
+        var total = document.createElement("div"); total.style.fontFamily="var(--mono)"; total.style.fontSize="13px";
+        total.textContent = fmt(projectContractTotal(p)) + " ₽";
+        top.appendChild(h3); top.appendChild(total);
+        var meta = document.createElement("div"); meta.className="pc-meta";
+        meta.textContent = (p.address||"адрес не указан") + " · " + (p.clientName||"заказчик не указан") + " · этапов: " + p.stages.length;
+        var pb = document.createElement("div"); pb.className="progress-bar";
+        var pbi = document.createElement("div"); pbi.style.width = projectProgress(p)+"%"; pb.appendChild(pbi);
+        card.appendChild(top); card.appendChild(meta); card.appendChild(pb);
+        card.addEventListener("click", function(){ state.selectedProjectId = p.id; renderCurrent(); });
+        panel.appendChild(card);
+      });
+    }
+    root.appendChild(panel);
+
+    var project = projectById(state.selectedProjectId);
+    if(!project) return;
+
+    var detail = document.createElement("div"); detail.className="panel";
+    var dTop = document.createElement("div"); dTop.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;";
+    var dh = document.createElement("div"); dh.innerHTML = "<h2>Карточка объекта</h2>";
+    var delProj = document.createElement("button"); delProj.className="btn danger small no-print"; delProj.textContent="Удалить объект";
+    delProj.addEventListener("click", function(){
+      state.projects = state.projects.filter(function(x){return x.id!==project.id;});
+      state.selectedProjectId = null; save(); renderCurrent();
+    });
+    dTop.appendChild(dh); dTop.appendChild(delProj);
+    detail.appendChild(dTop);
+
+    var infoGrid = document.createElement("div"); infoGrid.className="grid cols-2";
+    infoGrid.appendChild(fieldText("Название объекта (напр. «Казань, Мира, 64»)", project.name, function(v){project.name=v; save();}));
+    infoGrid.appendChild(fieldText("Адрес", project.address, function(v){project.address=v; save();}));
+    detail.appendChild(infoGrid);
+    var infoGrid2 = document.createElement("div"); infoGrid2.className="grid cols-2"; infoGrid2.style.marginTop="12px";
+    infoGrid2.appendChild(fieldText("Заказчик", project.clientName, function(v){project.clientName=v; save();}));
+    infoGrid2.appendChild(fieldText("Телефон заказчика", project.clientPhone, function(v){project.clientPhone=v; save();}));
+    detail.appendChild(infoGrid2);
+
+    var projFin = document.createElement("div"); projFin.className="fin-grid"; projFin.style.marginTop="16px";
+    function finBox2(label,val,cls){ var b=document.createElement("div"); b.className="fin-box"+(cls?(" "+cls):"");
+      b.innerHTML = "<div class='lbl'>"+label+"</div><div class='val'>"+fmt(val)+" ₽</div>"; return b; }
+    var spentTotal = projectSpentTotal(project), advanceTotal = projectAdvanceTotal(project);
+    projFin.appendChild(finBox2("Смета по объекту", projectContractTotal(project)));
+    projFin.appendChild(finBox2("Аванс на материалы", advanceTotal));
+    projFin.appendChild(finBox2("Потрачено на материалы", spentTotal));
+    projFin.appendChild(finBox2("Остаток по материалам", advanceTotal-spentTotal, (advanceTotal-spentTotal<0)?"danger":"ok"));
+    detail.appendChild(projFin);
+
+    var btnRow = document.createElement("div"); btnRow.className="btn-row no-print";
+    var printBtn = document.createElement("button"); printBtn.className="btn ghost"; printBtn.textContent="Печать / экспорт отчёта по объекту";
+    printBtn.addEventListener("click", function(){ window.print(); });
+    btnRow.appendChild(printBtn);
+    detail.appendChild(btnRow);
+
+    var stagesLabel = document.createElement("div"); stagesLabel.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-top:20px;";
+    stagesLabel.innerHTML = "<h2 style='margin:0;'>Этапы</h2>";
+    var addStageBtn = document.createElement("button"); addStageBtn.className="btn no-print small"; addStageBtn.textContent="+ Этап";
+    addStageBtn.addEventListener("click", function(){ project.stages.push(blankStage()); save(); renderCurrent(); });
+    stagesLabel.appendChild(addStageBtn);
+    detail.appendChild(stagesLabel);
+
+    if(!project.stages.length){
+      var se = document.createElement("div"); se.className="empty"; se.textContent="Этапов пока нет.";
+      detail.appendChild(se);
+    } else {
+      project.stages.forEach(function(stage){ detail.appendChild(renderStageCard(project, stage, "rp")); });
+    }
+
+    root.appendChild(detail);
+  }
+
+  /* ---------- Customer view ---------- */
+  function renderCustomer(root){
+    var selectPanel = document.createElement("div"); selectPanel.className="panel no-print";
+    selectPanel.innerHTML = "<h2>Кабинет заказчика</h2><p class='hint'>Выберите объект (в реальной версии — вход по ссылке/коду для заказчика).</p>";
+    var sel = document.createElement("select");
+    var blank = document.createElement("option"); blank.value=""; blank.textContent="— выберите объект —"; sel.appendChild(blank);
+    state.projects.forEach(function(p){ var o=document.createElement("option"); o.value=p.id; o.textContent=(p.name||"Без названия")+" — "+(p.clientName||""); if(p.id===state.selectedCustomerProjectId) o.selected=true; sel.appendChild(o); });
+    sel.addEventListener("change", function(){ state.selectedCustomerProjectId = sel.value; renderCurrent(); });
+    selectPanel.appendChild(sel);
+    root.appendChild(selectPanel);
+
+    var project = projectById(state.selectedCustomerProjectId);
+    if(!project){
+      var empty = document.createElement("div"); empty.className="panel empty"; empty.textContent="Выберите объект выше.";
+      root.appendChild(empty); return;
+    }
+
+    var detail = document.createElement("div"); detail.className="panel";
+    detail.innerHTML = "<h2>"+(project.name||"Объект")+"</h2><p class='hint'>"+(project.address||"")+"</p>";
+    var projFin = document.createElement("div"); projFin.className="fin-grid";
+    var spentTotal = projectSpentTotal(project), advanceTotal = projectAdvanceTotal(project);
+    function finBox2(label,val,cls){ var b=document.createElement("div"); b.className="fin-box"+(cls?(" "+cls):"");
+      b.innerHTML = "<div class='lbl'>"+label+"</div><div class='val'>"+fmt(val)+" ₽</div>"; return b; }
+    projFin.appendChild(finBox2("Смета по объекту", projectContractTotal(project)));
+    projFin.appendChild(finBox2("Внесено на материалы", advanceTotal));
+    projFin.appendChild(finBox2("Потрачено на материалы", spentTotal));
+    projFin.appendChild(finBox2("Остаток", advanceTotal-spentTotal, (advanceTotal-spentTotal<0)?"danger":"ok"));
+    detail.appendChild(projFin);
+    var btnRow = document.createElement("div"); btnRow.className="btn-row no-print";
+    var printBtn = document.createElement("button"); printBtn.className="btn ghost"; printBtn.textContent="Печать отчёта";
+    printBtn.addEventListener("click", function(){ window.print(); });
+    btnRow.appendChild(printBtn);
+    detail.appendChild(btnRow);
+    root.appendChild(detail);
+
+    var stagesPanel = document.createElement("div"); stagesPanel.className="panel";
+    stagesPanel.innerHTML = "<h2>Этапы</h2>";
+    if(!project.stages.length){ var se=document.createElement("div"); se.className="empty"; se.textContent="Этапов пока нет."; stagesPanel.appendChild(se); }
+    else { project.stages.forEach(function(stage){ stagesPanel.appendChild(renderStageCard(project, stage, "customer")); }); }
+    root.appendChild(stagesPanel);
+  }
+
+  /* ---------- Master view ---------- */
+  function renderMaster(root){
+    var names = allMasterNames();
+    var selectPanel = document.createElement("div"); selectPanel.className="panel no-print";
+    selectPanel.innerHTML = "<h2>Кабинет мастера</h2><p class='hint'>Выберите своё имя (в реальной версии — вход по коду/телефону).</p>";
+    var sel = document.createElement("select");
+    var blank=document.createElement("option"); blank.value=""; blank.textContent="— выберите мастера —"; sel.appendChild(blank);
+    names.forEach(function(n){ var o=document.createElement("option"); o.value=n; o.textContent=n; if(n===state.selectedMaster) o.selected=true; sel.appendChild(o); });
+    var customOpt = document.createElement("input"); customOpt.placeholder="или впишите имя (если его ещё нет в списке)"; customOpt.style.marginTop="8px";
+    customOpt.value = (names.indexOf(state.selectedMaster)===-1) ? state.selectedMaster : "";
+    customOpt.addEventListener("change", function(){ if(customOpt.value){ state.selectedMaster = customOpt.value; sel.value=""; renderCurrent(); } });
+    sel.addEventListener("change", function(){ state.selectedMaster = sel.value; renderCurrent(); });
+    selectPanel.appendChild(sel); selectPanel.appendChild(customOpt);
+    root.appendChild(selectPanel);
+
+    if(!state.selectedMaster){
+      var empty = document.createElement("div"); empty.className="panel empty"; empty.textContent="Выберите мастера, чтобы увидеть назначенные этапы.";
+      root.appendChild(empty); return;
+    }
+
+    var found = false;
+    state.projects.forEach(function(project){
+      var myStages = project.stages.filter(function(s){ return s.assignedMaster === state.selectedMaster; });
+      if(!myStages.length) return;
+      found = true;
+      var panel = document.createElement("div"); panel.className="panel";
+      panel.innerHTML = "<h2>"+(project.name||"Объект")+"</h2><p class='hint'>"+(project.address||"")+"</p>";
+      myStages.forEach(function(stage){ panel.appendChild(renderStageCard(project, stage, "master")); });
+      root.appendChild(panel);
+    });
+    if(!found){
+      var e2 = document.createElement("div"); e2.className="panel empty"; e2.textContent="На это имя пока не назначено ни одного этапа.";
+      root.appendChild(e2);
+    }
+  }
+
+  /* ---------- render dispatch ---------- */
+  function renderCurrent(){
+    var root = document.getElementById("app");
+    root.innerHTML = "";
+    if(state.role==="rp") renderRP(root);
+    else if(state.role==="customer") renderCustomer(root);
+    else renderMaster(root);
+  }
+
+  /* ---------- role bar ---------- */
+  document.querySelectorAll(".role-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".role-btn").forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      state.role = btn.dataset.role;
+      renderCurrent();
+    });
+  });
+
+  /* ---------- theme ---------- */
+  var themeBtn = document.getElementById("themeToggle");
+  function setTheme(mode){
+    if(mode==="dark"){ document.documentElement.setAttribute("data-theme","dark"); themeBtn.textContent="светлая тема"; }
+    else{ document.documentElement.setAttribute("data-theme","light"); themeBtn.textContent="тёмная тема"; }
+    try{ localStorage.setItem("pragma_tracker_theme", mode); }catch(e){}
+  }
+  themeBtn.addEventListener("click", function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    setTheme(cur==="dark"?"light":"dark");
+  });
+  try{ var st=localStorage.getItem("pragma_tracker_theme"); if(st) setTheme(st); }catch(e){}
+
+  /* ---------- init ---------- */
+  load();
+  if(!state.projects.length){
+    var demo = blankProject();
+    demo.name = "Казань, Мира, 64"; demo.address = "г. Казань, ул. Мира, 64"; demo.clientName = "Сосновский Владимир Вячеславович"; demo.clientPhone="";
+    var s1 = blankStage(); s1.name="Демонтажные работы"; s1.status="in_progress"; s1.contractAmount=45000; s1.materialsAdvance=0;
+    demo.stages.push(s1);
+    state.projects.push(demo);
+    state.selectedProjectId = demo.id;
+    save();
+  } else {
+    state.selectedProjectId = state.projects[0].id;
+  }
+  renderCurrent();
+
+})();
+</script>
+</body>
+</html>
